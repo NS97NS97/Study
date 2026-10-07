@@ -9,7 +9,7 @@
 сети берётся последняя локальная копия.
 
 Запуск:  ``python -m recommender --google --dashboard``
-или     ``Обновить_дашборд.bat`` (двойной клик в проводнике).
+или     ``Запустить.bat`` (двойной клик в проводнике).
 """
 from __future__ import annotations
 
@@ -26,7 +26,6 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from . import config as C
-from .pipeline import run_pipeline
 
 # --- оформление -----------------------------------------------------------
 BRAND = "1F4E79"      # тёмно-синий, заголовки
@@ -254,7 +253,7 @@ def _build_dashboard_sheet(ws, result: dict, kpi: dict) -> None:
     s = ws["A2"]
     s.value = (f"Источник: {kpi['source'] or 'локальный файл data/coins.xlsx'}  ·  "
                f"Сформировано: {datetime.now():%d.%m.%Y %H:%M}  ·  "
-               f"Обновить: двойной клик по файлу «Обновить_дашборд.bat»")
+               f"Обновить: двойной клик по файлу «Запустить.bat»")
     s.font = F_SUB
     s.alignment = Alignment(horizontal="center", vertical="center")
 
@@ -463,16 +462,28 @@ def _write_instructions(ws) -> None:
     ws.sheet_view.showGridLines = False
     lines = [
         # (текст, размер, bold, italic, цвет, фон)
-        ("КАК ОБНОВИТЬ ДАШБОРД", 16, True, False, "FFFFFF", BRAND),
+        ("КАК ПОЛЬЗОВАТЬСЯ: ОДИН ЗАПУСК", 16, True, False, "FFFFFF", BRAND),
         ("", 8, False, False, None, None),
-        ("1. Откройте Google Таблицу и поправьте данные: статусы монет, сделки, клиентов.",
+        ("1. Поправьте данные в Google Таблице: статусы монет, сделки, клиентов.",
          11, False, False, None, None),
         ("", 6, False, False, None, None),
-        ("2. Дважды кликните файл «Обновить_дашборд.bat» в папке проекта.",
+        ("2. Дважды кликните файл «Запустить.bat» в папке проекта — он обновит всё сам.",
          11, False, False, None, None),
         ("", 6, False, False, None, None),
-        ("3. Откройте файл reports\\Дашборд.xlsx — он пересобран по свежим данным.",
+        ("3. Откроется файл «Рекомендации_для_вставки.xlsx» → вкладка «Копировать»:",
          11, False, False, None, None),
+        ("   клик на A1 → Ctrl+A → Ctrl+C, затем Google Таблица → вкладка",
+         11, False, False, None, None),
+        ("   «Рекомендации» → первая пустая строка → Ctrl+V.",
+         11, False, False, None, None),
+        ("", 6, False, False, None, None),
+        ("4. Этот дашборд (reports\\Дашборд.xlsx) открывается тем же запуском: карточки,",
+         11, False, False, None, None),
+        ("   графики и обоснование каждой рекомендации.",
+         11, False, False, None, None),
+        ("", 6, False, False, None, None),
+        ("Колонки «за сколько» и «предложено» система не трогает: их заполняете вы, "
+         "как и прежде.", 10, False, True, GREY, None),
         ("", 6, False, False, None, None),
         ("ЧТО ГДЕ СМОТРЕТЬ", 13, True, False, BRAND, None),
         ("  • «Дашборд» — карточки показателей, топ-5 рекомендаций для каждого клиента, графики.",
@@ -512,33 +523,3 @@ def _write_instructions(ws) -> None:
             ws.row_dimensions[row].height = 8 if size <= 8 else 18
         row += 1
 
-
-# ---------------------------------------------------------------------------
-# Полный запуск: выгрузка → расчёт → дашборд
-# ---------------------------------------------------------------------------
-def run_dashboard(input_path: str | Path = C.EXCEL_PATH,
-                  out_path: str | Path = C.DASHBOARD_PATH,
-                  use_google: bool = True,
-                  top_k: int = C.TOP_K,
-                  out_dir: str | Path | None = None,
-                  verbose: bool = True) -> dict:
-    """Один вызов: выгрузка из Google Таблицы → расчёт → сборка книги.
-
-    ``out_dir`` — куда писать отчёты конвейера; по умолчанию — каталог, в
-    котором лежит дашборд.
-    """
-    source = f"локальный файл {input_path}"
-    path = Path(input_path)
-    if use_google:
-        path, source = refresh_source(dest=path)
-    if verbose:
-        print(f"Источник данных: {source}")
-
-    result = run_pipeline(input_path=path,
-                          out_dir=Path(out_dir) if out_dir else Path(out_path).parent,
-                          top_k=top_k, verbose=verbose)
-    dash = build_dashboard(result, out_path, source_note=source)
-    result["дашборд"] = dash
-    if verbose:
-        print(f"Дашборд готов: {dash}")
-    return result
