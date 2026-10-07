@@ -37,7 +37,7 @@ python -m recommender --google --dashboard
 
 ```bash
 python tools/build_notebook.py
-jupyter nbconvert --to notebook --execute --inplace notebooks/01_рекомендательная_система.ipynb
+python -m nbconvert --to notebook --execute --inplace notebooks/01_рекомендательная_система.ipynb
 ```
 
 ---
